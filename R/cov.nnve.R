@@ -89,17 +89,17 @@ function(datamat, k = 12, pnoise = 0.050000000000000003, emconv = 0.001, bound =
 		lambda2 <- k/(alpha.d * mean((kthNND[delta == 1])^d))
 		loglik.old <- 0
 		loglik.new <- 1
+		denom.eps <- 1e-5
 		#
 		# Iterator starts here, 
 		#
 		while(abs(loglik.new - loglik.old)/(1+abs(loglik.new)) > convergence) 
 			{
 			# E - step
-			delta <- (p * dDk(kthNND, lambda1, k = k, d = d, 
-				alpha.d = alpha.d))/(p * dDk(kthNND, lambda1,
-				k = k, d = d, alpha.d = alpha.d) + (1 - p) *
+		    dDk.lambda1 <- dDk(kthNND, lambda1, k = k, d = d, alpha.d = alpha.d)
+			delta <- (p * dDk.lambda1)/pmax((p * dDk.lambda1 + (1 - p) *
 				dDk(kthNND, lambda2, k = k, d = d, alpha.d = 
-				alpha.d))
+				alpha.d)), denom.eps)
 			# M - step
 			p <- sum(delta)/n
 			lambda1 <- (k * sum(delta))/(alpha.d * sum((kthNND^
@@ -116,9 +116,9 @@ function(datamat, k = 12, pnoise = 0.050000000000000003, emconv = 0.001, bound =
 		#
 		# z will be the classifications. 1= in cluster. 0= in noise.
 		#
-		probs <- dDk(kthNND, lambda1, k = k, d = d, alpha.d = alpha.d)/
-			(dDk(kthNND, lambda1, k = k, d = d, alpha.d = alpha.d) +
-			dDk(kthNND, lambda2, k = k, d = d, alpha.d = alpha.d))
+		dDk.lambda1 <- dDk(kthNND, lambda1, k = k, d = d, alpha.d = alpha.d)
+		probs <- dDk.lambda1/pmax((dDk.lambda1 +
+			dDk(kthNND, lambda2, k = k, d = d, alpha.d = alpha.d)), denom.eps)
 		mprob <- 1. - probs
 		mu1 <- apply((probs * datamat), 2, sum)/sum(probs)
 		mu2 <- apply((mprob * datamat), 2, sum)/sum(mprob)

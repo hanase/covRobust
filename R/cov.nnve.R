@@ -39,11 +39,12 @@ function(datamat, k = 12, pnoise = 0.050000000000000003, emconv = 0.001, bound =
 		#--------------------------------------------------------------
 		# find the density of D_k
 		#
-		dDk <- function(x, lambda, k, d, alpha.d)
+		dDk <- function(...) return(exp(ldDk(...)))
+		ldDk <- function(x, lambda, k, d, alpha.d)
 		{
-			(exp( - lambda * alpha.d * x^d + log(2) + k * log(
+			( - lambda * alpha.d * x^d + log(2) + k * log(
 				lambda * alpha.d) + log(x) * (d * k - 1) - log(
-				gamma(k))))
+				gamma(k)))
 		}
 		# end of dDk
 		#--------------------------------------------------------------
@@ -89,17 +90,19 @@ function(datamat, k = 12, pnoise = 0.050000000000000003, emconv = 0.001, bound =
 		lambda2 <- k/(alpha.d * mean((kthNND[delta == 1])^d))
 		loglik.old <- 0
 		loglik.new <- 1
-		denom.eps <- 1e-5
 		#
 		# Iterator starts here, 
 		#
 		while(abs(loglik.new - loglik.old)/(1+abs(loglik.new)) > convergence) 
 			{
 			# E - step
-		    dDk.lambda1 <- dDk(kthNND, lambda1, k = k, d = d, alpha.d = alpha.d)
-			delta <- (p * dDk.lambda1)/pmax((p * dDk.lambda1 + (1 - p) *
-				dDk(kthNND, lambda2, k = k, d = d, alpha.d = 
-				alpha.d)), denom.eps)
+			# scale the dDk on log scale by subtracting the maximum to avoid numerical issues
+		    ldDk.lambda1 <- ldDk(kthNND, lambda1, k = k, d = d, alpha.d = alpha.d)
+		    ldDk.lambda2 <- ldDk(kthNND, lambda2, k = k, d = d, alpha.d = alpha.d)
+		    ldDk.max <- max(ldDk.lambda1, ldDk.lambda2)
+		    dDk.lambda1 <- exp(ldDk.lambda1 - ldDk.max)
+			delta <- (p * dDk.lambda1)/(p * dDk.lambda1 + (1 - p) *
+				exp(ldDk.lambda2 - ldDk.max))
 			# M - step
 			p <- sum(delta)/n
 			lambda1 <- (k * sum(delta))/(alpha.d * sum((kthNND^
@@ -116,9 +119,11 @@ function(datamat, k = 12, pnoise = 0.050000000000000003, emconv = 0.001, bound =
 		#
 		# z will be the classifications. 1= in cluster. 0= in noise.
 		#
-		dDk.lambda1 <- dDk(kthNND, lambda1, k = k, d = d, alpha.d = alpha.d)
-		probs <- dDk.lambda1/pmax((dDk.lambda1 +
-			dDk(kthNND, lambda2, k = k, d = d, alpha.d = alpha.d)), denom.eps)
+		ldDk.lambda1 <- ldDk(kthNND, lambda1, k = k, d = d, alpha.d = alpha.d)
+		ldDk.lambda2 <- ldDk(kthNND, lambda2, k = k, d = d, alpha.d = alpha.d)
+		ldDk.max <- max(ldDk.lambda1, ldDk.lambda2)
+		dDk.lambda1 <- exp(ldDk.lambda1 - ldDk.max)
+		probs <- dDk.lambda1/(dDk.lambda1 + exp(ldDk.lambda2 - ldDk.max))
 		mprob <- 1. - probs
 		mu1 <- apply((probs * datamat), 2, sum)/sum(probs)
 		mu2 <- apply((mprob * datamat), 2, sum)/sum(mprob)

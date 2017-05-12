@@ -99,7 +99,7 @@ function(datamat, k = 12, pnoise = 0.050000000000000003, emconv = 0.001, bound =
 			# scale the dDk on log scale by subtracting the maximum to avoid numerical issues
 		    ldDk.lambda1 <- ldDk(kthNND, lambda1, k = k, d = d, alpha.d = alpha.d)
 		    ldDk.lambda2 <- ldDk(kthNND, lambda2, k = k, d = d, alpha.d = alpha.d)
-		    ldDk.max <- max(ldDk.lambda1, ldDk.lambda2)
+		    ldDk.max <- pmax(ldDk.lambda1, ldDk.lambda2)
 		    dDk.lambda1 <- exp(ldDk.lambda1 - ldDk.max)
 			delta <- (p * dDk.lambda1)/(p * dDk.lambda1 + (1 - p) *
 				exp(ldDk.lambda2 - ldDk.max))
@@ -121,7 +121,7 @@ function(datamat, k = 12, pnoise = 0.050000000000000003, emconv = 0.001, bound =
 		#
 		ldDk.lambda1 <- ldDk(kthNND, lambda1, k = k, d = d, alpha.d = alpha.d)
 		ldDk.lambda2 <- ldDk(kthNND, lambda2, k = k, d = d, alpha.d = alpha.d)
-		ldDk.max <- max(ldDk.lambda1, ldDk.lambda2)
+		ldDk.max <- pmax(ldDk.lambda1, ldDk.lambda2)
 		dDk.lambda1 <- exp(ldDk.lambda1 - ldDk.max)
 		probs <- dDk.lambda1/(dDk.lambda1 + exp(ldDk.lambda2 - ldDk.max))
 		mprob <- 1. - probs
